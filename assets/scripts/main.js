@@ -44,6 +44,23 @@ function initializeServiceWorker() {
   /*******************/
   // We first must register our ServiceWorker here before any of the code in
   // sw.js is executed.
+
+  window.addEventListener('load', async () => {
+    if ("serviceWorker" in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register("./sw.js", {
+          scope: "./",
+        });
+        if (registration.active) {
+          console.log("Service worker registered successed!");
+        }
+      } catch (error) {
+        console.error(`Registration failed with ${error}`);
+      }
+    }
+  })
+
+  
   // B1. TODO - Check if 'serviceWorker' is supported in the current browser
   // B2. TODO - Listen for the 'load' event on the window object.
   // Steps B3-B6 will be *inside* the event listener's function created in B2
@@ -69,6 +86,11 @@ async function getRecipes() {
   // A1. TODO - Check local storage to see if there are any recipes.
   //            If there are recipes, return them.
   /**************************/
+
+  if (localStorage.getItem('recipes') !== null) {
+    return JSON.parse(localStorage.getItem('recipes'));
+  }
+
   // The rest of this method will be concerned with requesting the recipes
   // from the network
   // A2. TODO - Create an empty array to hold the recipes that you will fetch
@@ -78,6 +100,29 @@ async function getRecipes() {
   //            take two parameters - resolve, and reject. These are functions
   //            you can call to either resolve the Promise or Reject it.
   /**************************/
+
+  let recipes = [];
+  return new Promise(async function(resolve, reject) {
+    for (let index = 0; index < RECIPE_URLS.length; index++) {
+      const url = RECIPE_URLS[index];
+      try {
+        //fetch url 
+        const response = await fetch(url);
+        //retrive the JSON
+        const recipt = await response.json();
+        recipes.push(recipt);
+        //check if finished retrieving all of the recipes.
+        if (index === RECIPE_URLS.length - 1) {
+          saveRecipesToStorage(recipes);
+          resolve(recipes);
+        }
+      } catch(err) {
+        console.error(err);
+        reject(err);
+      }
+    }
+  })
+
   // A4-A11 will all be *inside* the callback function we passed to the Promise
   // we're returning
   /**************************/
